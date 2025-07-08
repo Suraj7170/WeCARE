@@ -8,13 +8,14 @@ function DoctordDetail({ doctor }) {
   const fullImageUrl = imageUrl
     ? `http://localhost:1337${imageUrl}`
     : null;
+    console.log('Doctor Details:', doctor?.Image?.[0]?.url);
 
   return (
     <>
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-10 p-5 mt-2">
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-15 p-5 mt-2">
       <div>
         <img
-          src={fullImageUrl}
+          src={doctor?.Image?.[0]?.url}
           width={200}
           height={200}
           alt="Doctor"

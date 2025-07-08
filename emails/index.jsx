@@ -13,9 +13,6 @@ import {
   Text,
 } from '@react-email/components';
 
-const baseUrl = process.env.VERCEL_URL
-  ? `https://${process.env.VERCEL_URL}`
-  : 'http://localhost:3000';
 
 export const EmailTemplate = ({
   userFirstname = "Patient",
@@ -28,12 +25,13 @@ export const EmailTemplate = ({
       <Preview>Your appointment confirmation with {doctorName}</Preview>
       <Container style={container}>
         <Img
-          src={`${baseUrl}/logo.svg`}
+          src="https://res.cloudinary.com/dczb80p41/image/upload/f_auto,b_white/logo_jgrrcj.svg"
           width="170"
           height="50"
           alt="WeCARE"
-          style={logo}
         />
+
+
         <Text style={paragraph}>Hi {userFirstname},</Text>
         <Text style={paragraph}>
           Your appointment with <strong>{doctorName}</strong> is confirmed for <strong>{appointmentDate}</strong>.

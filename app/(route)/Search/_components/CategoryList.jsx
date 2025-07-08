@@ -6,97 +6,144 @@ import { Search, RefreshCw } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import GlobalApi from '@/app/_utils/GlobalApis';
 import Image from 'next/image';
-import {
-  Command,
-  CommandDialog,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-  CommandSeparator,
-  CommandShortcut,
-} from "@/components/ui/command"
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { useParams } from 'next/navigation';
 
+function CategorySidebarLayout() {
+  const [categoryList, setCategoryList] = useState([]);
+  const [doctorList, setDoctorList] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [error, setError] = useState(null);
+  const params = useParams();
+  const selectedCategory = params?.category;
 
-function CategoryList() {
-    const [categoryList, setCategoryList] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [error, setError] = useState(null);
-
-  const params=usePathname();  
-  const category=params.split('/')[2];
   useEffect(() => {
     getCategoryList();
   }, []);
 
+  useEffect(() => {
+    if (selectedCategory) {
+      fetchDoctorsByCategory(selectedCategory);
+    }
+  }, [selectedCategory]);
+
   const getCategoryList = () => {
     setLoading(true);
     setError(null);
+
     GlobalApi.getCategory()
       .then((resp) => {
-        setCategoryList(resp.data.data || []);
-        console.log('Category List:', resp.data.data);
+        const categories = resp?.data?.data;
+        setCategoryList(Array.isArray(categories) ? categories : []);
       })
       .catch((err) => {
-        console.error("Error fetching categories:", err);
         setError('Failed to load categories. Please try again.');
       })
       .finally(() => setLoading(false));
+  };
+
+  const fetchDoctorsByCategory = (categoryName) => {
+    GlobalApi.getDoctorByCategory(categoryName).then((res) => {
+      const doctors = res?.data?.data;
+      setDoctorList(Array.isArray(doctors) ? doctors : []);
+    });
   };
 
   const filteredCategories = categoryList.filter((cat) =>
     cat?.Name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleClearSearch = () => {
-    setSearchTerm('');
+  const isValidUrl = (url) => {
+    try {
+      new URL(url);
+      return true;
+    } catch {
+      return false;
+    }
   };
 
-  if (loading) return <div className='text-center py-10'>Loading categories...</div>;
+  return (
+    <div className="flex min-h-screen bg-gray-50">
+      {/* Sidebar */}
+      <aside className="w-full md:w-64 p-4 border-r bg-white shadow-sm">
+        <h2 className="text-xl font-semibold mb-4">Search Categories</h2>
+        <div className="flex items-center gap-2 mb-4">
+          <Input
+            placeholder="Search..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full"
+          />
+          <Button variant="outline">
+            <Search className="h-4 w-4" />
+          </Button>
+        </div>
 
-  if (error) return (
-    <div className='text-center py-10'>
-      <p className='text-red-500 mb-4'>{error}</p>
-      <Button onClick={getCategoryList}>
-        <RefreshCw className='mr-2 h-4 w-4' /> Retry
-      </Button>
+        <div className="flex flex-col gap-3 overflow-y-auto">
+          {loading ? (
+            <p>Loading...</p>
+          ) : filteredCategories.map((item, index) => {
+            const imageUrl = isValidUrl(item?.Icon?.[0]?.url)
+              ? item?.Icon?.[0]?.url
+              : '/default-icon.png';
+
+            return (
+              <Link
+                href={`/Search/${item.Name}`}
+                key={index}
+                className={`flex items-center gap-3 p-2 rounded hover:bg-blue-100 ${
+                  selectedCategory === item.Name ? 'bg-blue-100' : ''
+                }`}
+              >
+                <Image
+                  src={imageUrl}
+                  alt={item?.Name}
+                  width={40}
+                  height={40}
+                  className="rounded-full"
+                />
+                <span className="text-sm">{item?.Name}</span>
+              </Link>
+            );
+          })}
+        </div>
+      </aside>
+
+      {/* Doctor Display */}
+      
+        
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            {doctorList.map((doctor, index) => {
+              const imageUrl = doctor?.Image?.[0]?.url
+                ? `http://localhost:1337${doctor?.Image?.[0]?.url}`
+                : '/default-doctor.png';
+
+              return (
+                <div
+                  key={index}
+                  className="bg-white border rounded-lg p-4 flex flex-col items-center text-center shadow-sm hover:shadow-md transition"
+                >
+                  <Image
+                    src={imageUrl}
+                    alt="Doctor"
+                    width={100}
+                    height={100}
+                    className="rounded-full mb-3 object-cover"
+                  />
+                  <p className="font-semibold">{`Dr. ${doctor.Name}`}</p>
+                  <p className="text-sm text-gray-500">{selectedCategory}</p>
+                  <Link href={`/details/${doctor.id}`}>
+                    <Button className="mt-3">Book Now</Button>
+                  </Link>
+                </div>
+              );
+            })}
+          </div>
+        
+      
     </div>
   );
-  return (
-    <div className='h-screen mt-5 fixed flex flex-col '><Command>
-  <CommandInput placeholder="Type a command or search..." />
-  <CommandList className='overflow-visible'>
-    <CommandEmpty>No results found.</CommandEmpty>
-    <CommandGroup heading="Suggestions">
-        {categoryList&&categoryList.map((item,index) => (
-            <CommandItem key={index}>
-                <Link href={'/Search/'+item.Name} className={`p-2 flex gap-3 text-[13px] font-semibold text-blue-500
-                   rounded-md items-center cursor-pointer w-full ${category===item.Name?'bg-blue-100':''}`}>
-                    <Image 
-                        src={`${process.env.NEXT_PUBLIC_STRAPI_BASE_URL}${item?.Icon?.[0]?.url}`} 
-                        alt='icon' 
-                        height={25} 
-                        width={25} 
-                    />
-                    <label>{item.Name}</label>
-                </Link>
-            </CommandItem>
-        ))}
-      
-      
-    </CommandGroup>
-    <CommandSeparator />
-    <CommandGroup heading="Settings">
-      
-    </CommandGroup>
-  </CommandList>
-</Command>
-</div>
-  )
 }
 
-export default CategoryList
+export default CategorySidebarLayout;

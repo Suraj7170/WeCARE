@@ -16,6 +16,7 @@ import { CalendarDays, Clock } from 'lucide-react'
 import { useKindeBrowserClient } from '@kinde-oss/kinde-auth-nextjs'
 import GlobalApis from '@/app/_utils/GlobalApis'
 import { toast } from 'sonner'
+import moment from 'moment'
 
 function BookAppointment({ doctor }) {
   const [date, setDate] = useState(new Date())
@@ -46,37 +47,50 @@ function BookAppointment({ doctor }) {
     return day < new Date(today.getFullYear(), today.getMonth(), today.getDate())
   }
 
-  const saveBooking = () => {
+  const saveBooking = async () => {
     if (!user || !selectedTimeSlot || !date || !doctor) {
       toast.error("Missing required information to book appointment.")
       return
     }
 
-    const data = {
-      data: {
-        UserName: user.given_name + " " + user.family_name,
-        Email: user.email,
-        time: selectedTimeSlot,
-        Date: date,
-        doctor: doctor.id,
-        Note: note
-      }
-    }
+    try {
+      const response = await GlobalApis.getUserBookingList(user.email)
+      const bookings = response.data.data
 
-    GlobalApis.bookAppointment(data)
-      .then(resp => {
-        console.log("Booking response:", resp)
-        if (resp) {
-          GlobalApis.sendEmail(data).then(emailResp => {
-            console.log("Email sent:", emailResp)
-          })
-          toast.success("Booking confirmation sent to your email.")
+      const alreadyBooked = bookings.some(
+        (b) =>
+          moment(b.Date).format('YYYY-MM-DD') === moment(date).format('YYYY-MM-DD') &&
+          b.time === selectedTimeSlot &&
+          b.doctor?.id === doctor.id
+      )
+
+      if (alreadyBooked) {
+        toast.error("This slot is already booked.")
+        return
+      }
+
+      const data = {
+        data: {
+          UserName: `${user.given_name} ${user.family_name}`,
+          Email: user.email,
+          time: selectedTimeSlot,
+          Date: moment(date).format('YYYY-MM-DD'),
+          doctor: doctor.id,
+          DoctorName:doctor.name,
+          Note: note,
         }
-      })
-      .catch(err => {
-        console.error("Booking failed:", err)
-        toast.error("Failed to book appointment. Try again.")
-      })
+      }
+
+      const resp = await GlobalApis.bookAppointment(data)
+
+      if (resp) {
+        await GlobalApis.sendEmail(data)
+        toast.success("Booking confirmed. Confirmation sent to your email.")
+      }
+    } catch (error) {
+      console.error("Booking failed:", error)
+      toast.error("Failed to book appointment. Try again.")
+    }
   }
 
   return (

@@ -84,8 +84,7 @@ function CategorySearch() {
             </p>
             {searchTerm && (
               <Button variant='outline' onClick={handleClearSearch}>
-                Clear search
-              </Button>
+                Clear search</Button>
             )}
             <Button className='ml-2' onClick={getCategoryList}>
               <RefreshCw className='mr-2 h-4 w-4' /> Refresh
@@ -93,9 +92,7 @@ function CategorySearch() {
           </div>
         ) : (
           filteredCategories.map((item, index) => {
-            const imageUrl = item?.Icon?.[0]?.url
-              ? `${process.env.NEXT_PUBLIC_STRAPI_BASE_URL}${item.Icon[0].url}`
-              : null;
+            const imageUrl = item?.Icon?.[0]?.url;
 
             return (
               <Link href={'/Search/'+item.Name}

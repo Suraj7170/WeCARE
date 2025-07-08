@@ -9,9 +9,7 @@ function DoctorList({ doctorList , heading='Popular Doctors'}) {
       <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3'>
         {doctorList.length > 0 ? (
           doctorList.map((item) => {
-            const imageUrl = item?.Image?.[0]?.url
-              ? `${process.env.NEXT_PUBLIC_STRAPI_BASE_URL}${item.Image[0].url}`
-              : null;
+            const imageUrl = item?.Image?.[0]?.url;
 
             return (
               <div
